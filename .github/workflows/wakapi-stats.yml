@@ -1,4 +1,4 @@
-name: Update Wakapi Stats (All Time)
+name: Update Wakapi Stats
 
 on:
   schedule:
@@ -11,43 +11,53 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Fetch all-time stats from Wakapi
-        id: fetch
+      - name: Fetch stats from Wakapi (last 12 months)
         run: |
-          # Убираем BOM и сохраняем в файл
-          curl -s "https://time.rupu.ru/api/v1/users/Maxim/stats?is_including_today=true" | sed '1s/^\xEF\xBB\xBF//' > stats.json
+          # Запрашиваем максимально доступный период
+          curl -s "https://time.rupu.ru/api/v1/users/Maxim/stats?is_including_today=true&range=last_12_months" > stats.json
 
-          # Проверяем что получили (для отладки)
-          cat stats.json | head -c 200
+          # Проверяем, что получили
+          echo "=== RESPONSE ==="
+          cat stats.json | head -c 500
 
-          # Извлекаем данные через grep и cut (без jq)
+          # Извлекаем total_seconds (простой grep)
           TOTAL_SEC=$(grep -o '"total_seconds":[0-9]*' stats.json | head -1 | cut -d':' -f2)
+
+          if [ -z "$TOTAL_SEC" ]; then
+            echo "TOTAL_SEC not found, using fallback"
+            TOTAL_SEC=0
+          fi
+
           TOTAL_HOURS=$((TOTAL_SEC / 3600))
           TOTAL_MINS=$(( (TOTAL_SEC % 3600) / 60 ))
 
-          # Извлекаем языки (топ-3)
-          LANG1=$(grep -A 10 '"languages":' stats.json | grep '"name":"' | head -3 | sed 's/.*"name":"\([^"]*\)".*"hours":\([0-9]*\),"minutes":\([0-9]*\).*/\1: \2h \3m/' | tr '\n' ' | ' | sed 's/ | $//')
-
-          # Сохраняем в переменные
           echo "TOTAL_TIME=${TOTAL_HOURS}h ${TOTAL_MINS}m" >> $GITHUB_ENV
-          echo "TOP_LANGS=${LANG1}" >> $GITHUB_ENV
-          echo "RAW_JSON<<EOF" >> $GITHUB_ENV
-          cat stats.json >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+
+          # Извлекаем топ-3 языка
+          LANG_NAMES=$(grep -o '"name":"[^"]*"' stats.json | head -3 | cut -d'"' -f4 | tr '\n' ',' | sed 's/,$//')
+          echo "TOP_LANGS=${LANG_NAMES}" >> $GITHUB_ENV
 
       - name: Update README
         run: |
-          # Создаём красивый блок со статистикой
-          cat > STATS_BLOCK.md << 'EOF'
-          ## ⏱️ Coding Activity (All Time)
+          cat > STATS_BLOCK.md << EOF
+          ## ⏱️ Coding Activity (Last 12 Months)
 
-          | Метрика | Значение |
-          |---------|----------|
-          | 🕐 **Total time** | **'''${{ env.TOTAL_TIME }}'''** |
-          | 📊 **Top languages** | '''${{ env.TOP_LANGS }}''' |
+          | Metric | Value |
+          |--------|-------|
+          | 🕐 **Total time** | **${{ env.TOTAL_TIME }}** |
+          | 📊 **Top languages** | ${{ env.TOP_LANGS }} |
 
-          <details>
-          <summary>📈 Подробная статистика (JSON)</summary>
+          🔗 **[Live dashboard →](https://time.rupu.ru/u/Maxim)**
+          EOF
 
-          ```json
-          '''${{ env.RAW_JSON }}'''
+          # Вставляем блок (убедитесь, что в README есть маркеры <!-- STATS_START --> и <!-- STATS_END -->)
+          if grep -q "<!-- STATS_START -->" README.md; then
+            sed -i '/<!-- STATS_START -->/,/<!-- STATS_END -->/c\<!-- STATS_START -->\n'"$(cat STATS_BLOCK.md)"'\n<!-- STATS_END -->' README.md
+          else
+            echo -e "\n<!-- STATS_START -->\n$(cat STATS_BLOCK.md)\n<!-- STATS_END -->" >> README.md
+          fi
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "🤖 Update Wakapi stats (12 months)"
+          file_pattern: README.md
