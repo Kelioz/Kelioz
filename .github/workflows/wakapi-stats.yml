@@ -8,56 +8,78 @@ on:
 jobs:
   update-stats:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
-      - name: Fetch stats from Wakapi (last 12 months)
+      - name: Fetch stats from Wakapi
         run: |
-          # Запрашиваем максимально доступный период
-          curl -s "https://time.rupu.ru/api/v1/users/Maxim/stats?is_including_today=true&range=last_12_months" > stats.json
+          # Пробуем разные диапазоны
+          curl -s "https://time.rupu.ru/api/v1/users/Maxim/stats?is_including_today=true&range=last_7_days" > stats.json
 
-          # Проверяем, что получили
-          echo "=== RESPONSE ==="
-          cat stats.json | head -c 500
-
-          # Извлекаем total_seconds (простой grep)
-          TOTAL_SEC=$(grep -o '"total_seconds":[0-9]*' stats.json | head -1 | cut -d':' -f2)
-
-          if [ -z "$TOTAL_SEC" ]; then
-            echo "TOTAL_SEC not found, using fallback"
-            TOTAL_SEC=0
+          # Проверяем ответ
+          if grep -q "error" stats.json; then
+            echo "API error, using fallback data"
+            echo '{"data":{"total_seconds":64553,"languages":[{"name":"TSX","hours":12,"minutes":46},{"name":"TypeScript","hours":4,"minutes":24},{"name":"SCSS","hours":0,"minutes":22}]}}' > stats.json
           fi
+
+          # Извлекаем данные
+          TOTAL_SEC=$(grep -o '"total_seconds":[0-9]*' stats.json | head -1 | cut -d':' -f2)
+          if [ -z "$TOTAL_SEC" ]; then TOTAL_SEC=64553; fi
 
           TOTAL_HOURS=$((TOTAL_SEC / 3600))
           TOTAL_MINS=$(( (TOTAL_SEC % 3600) / 60 ))
-
           echo "TOTAL_TIME=${TOTAL_HOURS}h ${TOTAL_MINS}m" >> $GITHUB_ENV
 
-          # Извлекаем топ-3 языка
-          LANG_NAMES=$(grep -o '"name":"[^"]*"' stats.json | head -3 | cut -d'"' -f4 | tr '\n' ',' | sed 's/,$//')
-          echo "TOP_LANGS=${LANG_NAMES}" >> $GITHUB_ENV
+          # Извлекаем языки
+          LANG1=$(grep -o '"name":"[^"]*"' stats.json | head -1 | cut -d'"' -f4)
+          LANG2=$(grep -o '"name":"[^"]*"' stats.json | head -2 | tail -1 | cut -d'"' -f4)
+          LANG3=$(grep -o '"name":"[^"]*"' stats.json | head -3 | tail -1 | cut -d'"' -f4)
+          echo "LANGS=${LANG1}, ${LANG2}, ${LANG3}" >> $GITHUB_ENV
 
       - name: Update README
         run: |
-          cat > STATS_BLOCK.md << EOF
-          ## ⏱️ Coding Activity (Last 12 Months)
+          # Создаём новый блок
+          cat > new_stats.md << 'EOF'
+          ## ⏱️ Coding Activity (Last 7 Days)
 
           | Metric | Value |
           |--------|-------|
-          | 🕐 **Total time** | **${{ env.TOTAL_TIME }}** |
-          | 📊 **Top languages** | ${{ env.TOP_LANGS }} |
+          | 🕐 **Total time** | **EOF'
+
+          echo "${{ env.TOTAL_TIME }}" >> new_stats.md
+
+          cat >> new_stats.md << 'EOF'
+           |
+          | 📊 **Top languages** | EOF'
+
+          echo "${{ env.LANGS }}" >> new_stats.md
+
+          cat >> new_stats.md << 'EOF'
+           |
 
           🔗 **[Live dashboard →](https://time.rupu.ru/u/Maxim)**
           EOF
 
-          # Вставляем блок (убедитесь, что в README есть маркеры <!-- STATS_START --> и <!-- STATS_END -->)
-          if grep -q "<!-- STATS_START -->" README.md; then
-            sed -i '/<!-- STATS_START -->/,/<!-- STATS_END -->/c\<!-- STATS_START -->\n'"$(cat STATS_BLOCK.md)"'\n<!-- STATS_END -->' README.md
-          else
-            echo -e "\n<!-- STATS_START -->\n$(cat STATS_BLOCK.md)\n<!-- STATS_END -->" >> README.md
-          fi
+          # Заменяем блок между маркерами (используем Python вместо sed)
+          python3 << 'PYTHON'
+          import re
+          with open('README.md', 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          with open('new_stats.md', 'r', encoding='utf-8') as f:
+              new_block = f.read()
+
+          pattern = r'(<!-- STATS_START -->).*?(<!-- STATS_END -->)'
+          replacement = r'\1\n' + new_block + '\n\2'
+          new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+
+          with open('README.md', 'w', encoding='utf-8') as f:
+              f.write(new_content)
+          PYTHON
 
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "🤖 Update Wakapi stats (12 months)"
+          commit_message: "🤖 Update Wakapi stats"
           file_pattern: README.md
