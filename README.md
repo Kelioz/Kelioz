@@ -1,6 +1,6 @@
 # 👋 Hi there, I'm Maxim
 
-🎯 **Frontend Developer** specializing in **React**  
+🎯 **Frontend Developer** specializing in **React**
 
 ---
 
@@ -19,7 +19,7 @@
 React • JavaScript (ES6+) • TypeScript • HTML5 • CSS3 • Tailwind CSS • SCSS
 
 **Tools & Ecosystem:**  
-Redux Toolkit • React Router • Axios • Vite • Webpack • Git • REST API • ANTD * orval
+Redux Toolkit • React Router • Axios • Vite • Webpack • Git • REST API • ANTD \* orval
 
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
@@ -40,8 +40,10 @@ Redux Toolkit • React Router • Axios • Vite • Webpack • Git • REST A
 
 ---
 
+<!-- STATS_START -->
 
+⚙️ Статистика загружается автоматически...
 
-
+<!-- STATS_END -->
 
 > 🔗 Check out more pinned repositories below 👇

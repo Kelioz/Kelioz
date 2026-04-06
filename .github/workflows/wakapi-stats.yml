@@ -1,0 +1,51 @@
+name: Update Wakapi Stats (All Time)
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # Запуск каждый день в 2:00 UTC
+  workflow_dispatch: # Можно запустить вручную
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch all-time stats from Wakapi
+        id: fetch
+        run: |
+          # Запрашиваем статистику за всё время (без параметра range)
+          curl -s "https://time.rupu.ru/api/v1/users/Maxim/stats?is_including_today=true" > stats.json
+
+          # Извлекаем нужные данные
+          TOTAL_SEC=$(jq -r '.data.total_seconds' stats.json)
+          TOTAL_HOURS=$((TOTAL_SEC / 3600))
+          TOTAL_MINS=$(( (TOTAL_SEC % 3600) / 60 ))
+
+          # Формируем строку с языками (топ-5)
+          LANGUAGES=$(jq -r '.data.languages | sort_by(-.total_seconds) | .[0:5] | map("\(.name): \(.hours)h \(.minutes)m") | join(" | ")' stats.json)
+
+          # Сохраняем в переменные окружения
+          echo "TOTAL_TIME=${TOTAL_HOURS}h ${TOTAL_MINS}m" >> $GITHUB_ENV
+          echo "TOP_LANGS=${LANGUAGES}" >> $GITHUB_ENV
+
+      - name: Update README
+        run: |
+          # Создаём временный файл с новой статистикой
+          cat > stats_block.md << EOF
+          ## ⏱️ Coding Activity (All Time)
+
+          | Метрика | Значение |
+          |---------|----------|
+          | 🕐 **Total time** | **${{ env.TOTAL_TIME }}** |
+          | 📊 **Top languages** | ${{ env.TOP_LANGS }} |
+
+          EOF
+
+          # Заменяем блок в README (ищем теги <!-- STATS_START --> и <!-- STATS_END -->)
+          sed -i '/<!-- STATS_START -->/,/<!-- STATS_END -->/c\<!-- STATS_START -->\ncat stats_block.md\n<!-- STATS_END -->' README.md
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Auto-update Wakapi stats"
+          file_pattern: README.md
