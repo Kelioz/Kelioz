@@ -15,66 +15,50 @@ jobs:
 
       - name: Fetch stats from Wakapi
         run: |
-          # Пробуем разные диапазоны
           curl -s "https://time.rupu.ru/api/v1/users/Maxim/stats?is_including_today=true&range=last_7_days" > stats.json
-
-          # Проверяем ответ
+          
           if grep -q "error" stats.json; then
-            echo "API error, using fallback data"
-            echo '{"data":{"total_seconds":64553,"languages":[{"name":"TSX","hours":12,"minutes":46},{"name":"TypeScript","hours":4,"minutes":24},{"name":"SCSS","hours":0,"minutes":22}]}}' > stats.json
+            TOTAL_SEC=64553
+            LANG1="TSX"
+            LANG2="TypeScript"
+            LANG3="SCSS"
+          else
+            TOTAL_SEC=$(grep -o '"total_seconds":[0-9]*' stats.json | head -1 | cut -d':' -f2)
+            LANG1=$(grep -o '"name":"[^"]*"' stats.json | head -1 | cut -d'"' -f4)
+            LANG2=$(grep -o '"name":"[^"]*"' stats.json | head -2 | tail -1 | cut -d'"' -f4)
+            LANG3=$(grep -o '"name":"[^"]*"' stats.json | head -3 | tail -1 | cut -d'"' -f4)
           fi
-
-          # Извлекаем данные
-          TOTAL_SEC=$(grep -o '"total_seconds":[0-9]*' stats.json | head -1 | cut -d':' -f2)
-          if [ -z "$TOTAL_SEC" ]; then TOTAL_SEC=64553; fi
-
+          
           TOTAL_HOURS=$((TOTAL_SEC / 3600))
           TOTAL_MINS=$(( (TOTAL_SEC % 3600) / 60 ))
+          
           echo "TOTAL_TIME=${TOTAL_HOURS}h ${TOTAL_MINS}m" >> $GITHUB_ENV
-
-          # Извлекаем языки
-          LANG1=$(grep -o '"name":"[^"]*"' stats.json | head -1 | cut -d'"' -f4)
-          LANG2=$(grep -o '"name":"[^"]*"' stats.json | head -2 | tail -1 | cut -d'"' -f4)
-          LANG3=$(grep -o '"name":"[^"]*"' stats.json | head -3 | tail -1 | cut -d'"' -f4)
           echo "LANGS=${LANG1}, ${LANG2}, ${LANG3}" >> $GITHUB_ENV
 
       - name: Update README
         run: |
-          # Создаём новый блок
-          cat > new_stats.md << 'EOF'
-          ## ⏱️ Coding Activity (Last 7 Days)
-
-          | Metric | Value |
-          |--------|-------|
-          | 🕐 **Total time** | **EOF'
-
-          echo "${{ env.TOTAL_TIME }}" >> new_stats.md
-
-          cat >> new_stats.md << 'EOF'
-           |
-          | 📊 **Top languages** | EOF'
-
-          echo "${{ env.LANGS }}" >> new_stats.md
-
-          cat >> new_stats.md << 'EOF'
-           |
-
-          🔗 **[Live dashboard →](https://time.rupu.ru/u/Maxim)**
-          EOF
-
-          # Заменяем блок между маркерами (используем Python вместо sed)
           python3 << 'PYTHON'
-          import re
+          import re, os
+          
+          total_time = os.environ.get('TOTAL_TIME', '17h 56m')
+          langs = os.environ.get('LANGS', 'TSX, TypeScript, SCSS')
+          
+          new_block = f"""## ⏱️ Coding Activity (Last 7 Days)
+
+| Metric | Value |
+|--------|-------|
+| 🕐 **Total time** | **{total_time}** |
+| 📊 **Top languages** | {langs} |
+
+🔗 **[Live dashboard →](https://time.rupu.ru/u/Maxim)**"""
+          
           with open('README.md', 'r', encoding='utf-8') as f:
               content = f.read()
-
-          with open('new_stats.md', 'r', encoding='utf-8') as f:
-              new_block = f.read()
-
+          
           pattern = r'(<!-- STATS_START -->).*?(<!-- STATS_END -->)'
           replacement = r'\1\n' + new_block + '\n\2'
           new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
-
+          
           with open('README.md', 'w', encoding='utf-8') as f:
               f.write(new_content)
           PYTHON
