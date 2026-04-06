@@ -40,10 +40,4 @@ Redux Toolkit • React Router • Axios • Vite • Webpack • Git • REST A
 
 ---
 
-<!-- STATS_START -->
-
-⚙️ Статистика загружается автоматически...
-
-<!-- STATS_END -->
-
 > 🔗 Check out more pinned repositories below 👇
