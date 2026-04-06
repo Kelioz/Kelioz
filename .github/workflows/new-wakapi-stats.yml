@@ -16,7 +16,7 @@ jobs:
       - name: Fetch stats from Wakapi
         run: |
           curl -s "https://time.rupu.ru/api/v1/users/Maxim/stats?is_including_today=true&range=last_7_days" > stats.json
-          
+
           if grep -q "error" stats.json; then
             TOTAL_SEC=64553
             LANG1="TSX"
@@ -28,40 +28,40 @@ jobs:
             LANG2=$(grep -o '"name":"[^"]*"' stats.json | head -2 | tail -1 | cut -d'"' -f4)
             LANG3=$(grep -o '"name":"[^"]*"' stats.json | head -3 | tail -1 | cut -d'"' -f4)
           fi
-          
+
           TOTAL_HOURS=$((TOTAL_SEC / 3600))
           TOTAL_MINS=$(( (TOTAL_SEC % 3600) / 60 ))
-          
+
           echo "TOTAL_TIME=${TOTAL_HOURS}h ${TOTAL_MINS}m" >> $GITHUB_ENV
           echo "LANGS=${LANG1}, ${LANG2}, ${LANG3}" >> $GITHUB_ENV
 
       - name: Update README
         run: |
-          python3 << 'PYTHON'
+          python3 -c "
           import re, os
-          
+
           total_time = os.environ.get('TOTAL_TIME', '17h 56m')
           langs = os.environ.get('LANGS', 'TSX, TypeScript, SCSS')
-          
-          new_block = f"""## ⏱️ Coding Activity (Last 7 Days)
 
-| Metric | Value |
-|--------|-------|
-| 🕐 **Total time** | **{total_time}** |
-| 📊 **Top languages** | {langs} |
+          new_block = f'''## ⏱️ Coding Activity (Last 7 Days)
 
-🔗 **[Live dashboard →](https://time.rupu.ru/u/Maxim)**"""
-          
+          | Metric | Value |
+          |--------|-------|
+          | 🕐 **Total time** | **{total_time}** |
+          | 📊 **Top languages** | {langs} |
+
+          🔗 **[Live dashboard →](https://time.rupu.ru/u/Maxim)**'''
+
           with open('README.md', 'r', encoding='utf-8') as f:
               content = f.read()
-          
+
           pattern = r'(<!-- STATS_START -->).*?(<!-- STATS_END -->)'
           replacement = r'\1\n' + new_block + '\n\2'
           new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
-          
+
           with open('README.md', 'w', encoding='utf-8') as f:
               f.write(new_content)
-          PYTHON
+          "
 
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
