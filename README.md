@@ -1,19 +1,19 @@
 # 👋 Hi there, I'm Maxim
 
-🎯 **Frontend Developer** specializing in **React**
+**Frontend Developer** specializing in **React**
 
 ---
 
 ## About Me
 
-- 🔭 I’m currently working on modern React applications with TypeScript
-- 🚀 Passionate about building responsive, high-performance UIs
-- 🧠 Constantly learning: Next.js, Tailwind CSS, and state management (Redux/Zustand/Mobx)
-- ⚡ Fun fact: I love turning complex designs into clean, reusable code
+- I’m currently working on modern React applications with TypeScript
+- Passionate about building responsive, high-performance UIs
+- Constantly learning: Next.js, Tailwind CSS, and state management (Redux/Zustand/Mobx)
+- Fun fact: I love turning complex designs into clean, reusable code
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 **Core:**  
 React • JavaScript (ES6+) • TypeScript • HTML5 • CSS3 • Tailwind CSS • SCSS
@@ -40,4 +40,4 @@ Redux Toolkit • React Router • Axios • Vite • Webpack • Git • REST A
 
 ---
 
-> 🔗 Check out more pinned repositories below 👇
+> Check out more pinned repositories below 👇
