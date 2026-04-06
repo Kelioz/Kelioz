@@ -40,9 +40,7 @@ Redux Toolkit • React Router • Axios • Vite • Webpack • Git • REST A
 
 ---
 
-<!-- Replace with your actual metrics widgets -->
-![Kelioz's GitHub stats](https://github-readme-stats.vercel.app/api?username=Kelioz&show_icons=true&theme=radical)
-![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=Kelioz&layout=compact&theme=radical)
+
 
 
 
