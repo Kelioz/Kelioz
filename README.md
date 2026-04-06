@@ -41,9 +41,14 @@ Redux Toolkit • React Router • Axios • Vite • Webpack • Git • REST A
 ---
 
 <!-- STATS_START -->
+## ⏱️ Coding Activity (Last 7 Days)
 
-⚙️ Статистика загружается автоматически...
+| Metric | Value |
+|--------|-------|
+| 🕐 **Total time** | **0h 0m** |
+| 📊 **Top languages** | , ,  |
 
-<!-- STATS_END -->
+🔗 **[Live dashboard →](https://time.rupu.ru/u/Maxim)**
+
 
 > 🔗 Check out more pinned repositories below 👇
