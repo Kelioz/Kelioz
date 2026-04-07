@@ -8,8 +8,7 @@
 
 - I’m currently working on modern React applications with TypeScript
 - Passionate about building responsive, high-performance UIs
-- Constantly learning: Next.js, Tailwind CSS, and state management (Redux/Zustand/Mobx)
-- Fun fact: I love turning complex designs into clean, reusable code
+- I love turning complex designs into clean, reusable code
 
 ---
 
